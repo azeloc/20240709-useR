@@ -1,0 +1,141 @@
+---
+title: "A Comprehensive List of Normality Tests in R"
+author: "Fernando Corrêa"
+date: "2024/07/09"
+format:
+  revealjs:
+    incremental: true
+    css: logo.css
+    logo: logo.webp
+editor: visual
+---
+
+## Testing for normality is very common
+
+**Question**: Does the data comes from a normal distribution?
+
+```{r, fig.align='center'}
+library(ggplot2)
+
+set.seed(1)
+
+df <- data.frame(PF = 10*rnorm(1000))
+ggplot(df, aes(x = PF)) + 
+    geom_histogram(aes(y =..density..),
+                   breaks = seq(-50, 50, by = 10), 
+                   fill = "royalblue", 
+                   color = "white") +
+stat_function(fun = dnorm, args = list(mean = mean(df$PF), sd = sd(df$PF)), color = 'red', size = 2) +
+  theme_minimal(25) +
+  labs(x = "Data", y = "")
+
+```
+
+::: {.incremental}
+
+- Use cases: regression, ANOVAs etc
+- We don't need to rely only on graphics. There are more than 50 normality tests (and counting!)
+- Many of them are (or where) implemented in R. e.g. `PoweR` had many implementations, but is no longer in CRAN
+- Usual syntax: `x_sample <- rnorm(100); TEST(x_sample)$p.value`
+
+:::
+
+## Strategies for testing normality
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+Tests based on distances between ECDF/smoothed ECDFs vs expected deviations under gaussian sampling
+
+- Kolmogorov-Smirnov (KS) `stats::ks.test`
+- Lilliefors (L) `nortest::lillie.test`
+- Anderson-Darling (AD) `nortest::ad.test`
+- Cramer-von Mises (CVM) `nortest::cvm.test`
+- Jin Zhang's revised versions (Z-K, Z-A, Z-C)
+  - `DistributionTest::za.test(..., "norm")`
+
+:::
+
+::: {.column width="50%"}
+
+Tests based on the measured $\bar{X}$, $AVG((X-\bar{X})^2)$, $AVG((X-\bar{X})^3), ...$ vs expected deviations under gaussian sampling
+
+- Jarque-Bera (JB) `moments::j.test`
+- Anscombe-Glynn (AG) `moments::anscombe.test`
+- D'Agostino-skewness (DA) `moments::agostino.test`
+
+:::
+
+::::
+
+## Strategies for testing normality
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+Tests based on correlations
+
+- Shapiro-Wilk (SW) `stats::shapiro.test`
+- Shapiro-Francia (SF) `DescTools::ShapiroFranciaTest`
+
+Tests based on the entropy measures
+
+- Vasicek-Song tests `DescTools::vs.test(..., densfun = 'dnorm')`
+
+:::
+
+::: {.column width="50%"}
+
+Tests based on the $\chi^2$ distance between histogram counts and expected counts
+
+- Pearson's $\chi^2$ test `DescTools::PearsonTest`
+
+Many other tests are not on CRAN anymore, some procedures might be recovered from older versions releases
+
+- `PoweR`, `normtest` 
+
+:::
+
+::::
+
+## Which one should I pick? 
+
+There are many papers on this matter. We'll base our conclusions mainly in a 2022 bibliographical review [^1]
+
+- No test can dominate all the others, but some of them are better on _common_ situations
+
+- Most papers compare tests based on statistical power comparisons: being able to detect deviations from normality with high probability
+
+- All the mentioned packages run simulations to ensure that Type I errors are nominal i.e. rejection normality on $p < 5\%$ ensures the probability of rejecting a true gaussian distribution incorrectly is $5\%$
+
+[^1]: Uyanto, S. S. (2022). An Extensive Comparisons of 50 Univariate Goodness-of-fit Tests for Normality. Austrian Journal of Statistics, 51(3), 45–97. https://doi.org/10.17713/ajs.v51i3.1279
+
+## Which one should I pick? 
+
+% of rejection of $H_0$ when true data generating process is $Unif(0,1)$ 
+
+```{r, out.width='70%', fig.align='center'}
+knitr::include_graphics("Captura de Tela 2024-07-09 às 12.41.54.png")
+```
+
+## Final remarks
+
+- Kolmogorov-Smirnov and Shapiro-Wilk tests are low powered in common situations e.g. distributions that are unimodal and symmetric, but tails are slightly heavier than gaussian tails
+
+- For low sample sizes $n < 100$: 
+
+- (adjusted) Jarque-Bera shows good performance for symmetric distributions
+
+- Jin Zhang's version of traditional KS, AD and CVM are the most powerful tests otherwise
+
+- Something to remember: there are many implementations of the same tests, but some packages lacks maintenance
+
+# THANKS!
+
+Follow me on:
+
+Curso-R: https://curso-r.com
+
+My Github:https://github.com/azeloc
